@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TruthLens AI | Fact-Checking AI Agent</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;700;800&display=swap" rel="stylesheet" />
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <!-- App Container -->
+    <div class="app-container">
+      
+      <!-- Top Navigation -->
+      <nav class="navbar">
+        <div class="logo">
+          <i class="ph-fill ph-magnifying-glass-plus"></i>
+          <h1 data-i18n="appTitle">TruthLens <span>AI</span></h1>
+        </div>
+        <div class="nav-actions">
+          <div class="lang-wrapper">
+            <i class="ph ph-globe lang-icon"></i>
+            <select id="lang-toggle" class="lang-select" title="Select Language">
+              <option value="en">English</option>
+              <option value="hi">हिन्दी</option>
+            </select>
+          </div>
+          <button id="settings-btn" class="icon-btn" title="API Settings">
+            <i class="ph ph-gear-six"></i>
+          </button>
+        </div>
+      </nav>
+
+      <!-- Settings Modal -->
+      <div id="settings-modal" class="modal hidden">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2><i class="ph ph-key"></i> <span data-i18n="settingsTitle">Settings</span></h2>
+            <button id="close-settings-btn" class="icon-btn"><i class="ph ph-x"></i></button>
+          </div>
+          <div class="modal-body">
+            <p class="settings-desc" data-i18n="settingsDesc">TruthLens requires a Google Gemini API key to research and verify news directly from your browser. Your key is securely stored locally and never sent to our servers.</p>
+            <div class="input-group">
+              <label for="api-key-input" data-i18n="apiKeyLabel">Gemini API Key</label>
+              <input type="password" id="api-key-input" placeholder="AIzaSy..." autocomplete="off"/>
+            </div>
+            <button id="save-settings-btn" class="btn primary-btn" data-i18n="saveKeyBtn">Save Key</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        
+        <!-- Input Section -->
+        <section class="input-section glass-panel">
+          <div class="section-header">
+            <h2 data-i18n="analyzeClaimTitle">Analyze Claim</h2>
+            <p data-i18n="analyzeClaimDesc">Paste a news article snippet, a claim, or upload an image/screenshot for verification.</p>
+          </div>
+
+          <!-- Claim Input Area -->
+          <div class="input-wrapper">
+            <textarea id="claim-text" data-i18n-placeholder="claimPlaceholder" placeholder="e.g., 'NASA just announced they found alien life on Mars!' Or paste a news link to evaluate..." rows="4"></textarea>
+          </div>
+
+          <!-- File Upload Zone -->
+          <div id="drop-zone" class="drop-zone">
+            <i class="ph ph-upload-simple"></i>
+            <p><span data-i18n="dropZoneText">Drag & Drop an image/screenshot here or </span><span class="browse-txt" data-i18n="browseTxt">browse</span></p>
+            <input type="file" id="file-input" accept="image/png, image/jpeg, image/webp" hidden />
+            <div id="image-preview" class="hidden">
+              <img id="preview-img" src="" alt="Image Preview" />
+              <button id="remove-img-btn" class="icon-btn remove-btn"><i class="ph ph-x"></i></button>
+            </div>
+          </div>
+
+          <!-- Action Control -->
+          <div class="action-footer">
+            <button id="analyze-btn" class="btn primary-btn glow-effect">
+              <i class="ph ph-scan"></i> <span data-i18n="analyzeBtn">Authenticate Truth</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Loading / Analysis State -->
+        <section id="loading-section" class="loading-section hidden">
+          <div class="scanner-container">
+            <div class="scanner-ring"></div>
+            <i class="ph ph-robot icon-glow"></i>
+          </div>
+          <h3 class="loading-text" data-i18n="loadingText">Agent Researching...</h3>
+          <p class="loading-subtext" data-i18n="loadingSubtext">TruthLens AI is cross-referencing sources across the web and analyzing patterns.</p>
+          
+          <div class="progress-steps">
+            <div class="step active"><i class="ph ph-text-aa"></i> <span data-i18n="step1">Extracting claims</span></div>
+            <div class="step active blink"><i class="ph ph-globe-hemisphere-west"></i> <span data-i18n="step2">Searching knowledge bases</span></div>
+            <div class="step pending"><i class="ph ph-brain"></i> <span data-i18n="step3">Reasoning & identifying flags</span></div>
+          </div>
+        </section>
+
+        <!-- Results Section -->
+        <section id="results-section" class="results-section glass-panel hidden">
+          
+          <!-- Top Verdict Header -->
+          <div class="verdict-banner">
+            <div class="verdict-icon-container">
+              <i id="verdict-icon" class="ph-fill ph-warning-circle"></i>
+            </div>
+            <div class="verdict-text-info">
+              <h2 id="verdict-title">Unverified</h2>
+              <p>Confidence: <strong id="confidence-score">0%</strong></p>
+            </div>
+            <div class="score-ring-container">
+              <svg viewBox="0 0 36 36" class="circular-chart">
+                <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path id="score-circle" class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              </svg>
+              <div id="score-percentage" class="score-percentage">0%</div>
+            </div>
+          </div>
+
+          <!-- Reasonings / Points -->
+          <div class="analysis-details">
+            <div class="detail-box reason-box">
+              <h3><i class="ph ph-list-checks"></i> <span data-i18n="reasoningTitle">Reasoning & Evidence</span></h3>
+              <ul id="reason-list" class="styled-list">
+                <!-- Dynamically populated points -->
+              </ul>
+            </div>
+
+            <!-- Red Flags -->
+            <div id="red-flags-container" class="detail-box warning-box hidden">
+              <h3><i class="ph ph-flag-banner"></i> <span data-i18n="redFlagsTitle">Identified Red Flags</span></h3>
+              <ul id="red-flag-list" class="styled-list warning-list">
+                <!-- Dynamically populated points -->
+              </ul>
+            </div>
+            
+            <!-- Sources -->
+            <div class="detail-box source-box">
+               <h3><i class="ph ph-link"></i> <span data-i18n="sourcesTitle">Agent Sources Checked</span></h3>
+               <ul id="source-list" class="styled-list subtle-list">
+                 <!-- Dynamically populated points -->
+               </ul>
+            </div>
+          </div>
+          
+          <button id="reset-btn" class="btn secondary-btn"><i class="ph ph-arrow-counter-clockwise"></i> <span data-i18n="resetBtn">Check Another Claim</span></button>
+        </section>
+
+      </main>
+
+      <footer class="app-footer">
+        <p data-i18n="footerText">TruthLens AI operates using large language models. Always independently verify critical information.</p>
+      </footer>
+    </div>
+    
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
