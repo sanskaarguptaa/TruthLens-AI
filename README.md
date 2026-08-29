@@ -64,6 +64,19 @@ TruthLens AI utilizes Vite to bundle bare modules for the browser.
 4. **Getting your API Key:**
    Open the Application in your browser (usually `http://localhost:5173/`). Click the Settings gear in the top right to paste your [Google Gemini API Key](https://aistudio.google.com/app/apikey).
 
+## Deploying to Render
+
+1. Log in to [Render](https://render.com/).
+2. Click **New +** and select **Static Site**.
+3. Connect your GitHub repository: `sanskaarguptaa/TruthLens-AI`.
+4. Configure the settings:
+   - **Name**: `truthlens-ai` (or any preferred name)
+   - **Build Command**: `npm install && npm run build`
+   - **Publish Directory**: `dist`
+5. Click **Create Static Site**.
+
+Alternatively, select **New Blueprint** on Render, connect the repo, and Render will automatically detect the `render.yaml` configuration.
+
 ## Technology Stack
 - **HTML5, CSS3, ES6 JavaScript**
 - **Vite** (Local Development Server & Bundling)
