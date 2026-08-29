@@ -57,8 +57,15 @@
       <!-- Main Content -->
       <main class="main-content">
         
-        <!-- Input Section -->
-        <section class="input-section glass-panel">
+        <!-- View Toggle -->
+        <div class="view-tabs">
+          <button id="tab-analyze" class="tab-btn active"><i class="ph ph-detective"></i> <span data-i18n="tabAnalyze">Fact Check</span></button>
+          <button id="tab-trending" class="tab-btn"><i class="ph ph-flag"></i> <span data-i18n="tabTrending">India News</span></button>
+        </div>
+
+        <div id="fact-check-view">
+          <!-- Input Section -->
+          <section id="analyze-section" class="input-section glass-panel">
           <div class="section-header">
             <h2 data-i18n="analyzeClaimTitle">Analyze Claim</h2>
             <p data-i18n="analyzeClaimDesc">Paste a news article snippet, a claim, or upload an image/screenshot for verification.</p>
@@ -152,6 +159,45 @@
           </div>
           
           <button id="reset-btn" class="btn secondary-btn"><i class="ph ph-arrow-counter-clockwise"></i> <span data-i18n="resetBtn">Check Another Claim</span></button>
+        </section>
+        </div>
+
+        <!-- India News Section -->
+        <section id="trending-section" class="trending-section glass-panel hidden">
+          <div class="section-header">
+            <h2 data-i18n="trendingTitle">India News</h2>
+            <p data-i18n="trendingDesc">Discover the latest verified news across India including geography, politics, stock market, and more, curated by TruthLens AI.</p>
+          </div>
+
+          <!-- Topics Selector -->
+          <div class="topics-container">
+            <button class="topic-pill active" data-topic="Politics" data-i18n="topicPolitics">Politics</button>
+            <button class="topic-pill" data-topic="Stock Market" data-i18n="topicStock">Stock Market</button>
+            <button class="topic-pill" data-topic="Geography" data-i18n="topicGeography">Geography</button>
+            <button class="topic-pill" data-topic="Technology" data-i18n="topicTech">Technology</button>
+            <button class="topic-pill" data-topic="Business" data-i18n="topicBusiness">Business</button>
+          </div>
+
+          <div class="action-footer">
+            <button id="fetch-news-btn" class="btn primary-btn glow-effect">
+              <i class="ph ph-sparkle"></i> <span data-i18n="discoverNewsBtn">Discover India News</span>
+            </button>
+          </div>
+
+          <!-- Loading State for Trending -->
+          <div id="trending-loading" class="loading-section hidden" style="padding: 2rem;">
+            <div class="scanner-container">
+              <div class="scanner-ring" style="border-top-color: var(--accent-secondary);"></div>
+              <i class="ph ph-newspaper icon-glow" style="color: var(--accent-secondary);"></i>
+            </div>
+            <h3 class="loading-text" data-i18n="trendingLoadingText">Curating News...</h3>
+            <p class="loading-subtext" data-i18n="trendingLoadingSubtext">AI is searching and cross-verifying the latest stories from credible sources.</p>
+          </div>
+
+          <!-- News Container -->
+          <div id="news-grid" class="news-grid hidden">
+            <!-- News Cards go here dynamically -->
+          </div>
         </section>
 
       </main>

@@ -21,9 +21,29 @@ Output MUST be purely in JSON format.
   "reasoningPoints": [ "Detailed point 1 explaining the logic and evidence", "Detailed point 2...", ... ],
   "redFlags": [ "Red flag 1", "Red flag 2" ] (Leave empty if none),
   "sourcesFound": [ "Source 1", "Source 2" ] (Leave empty if no specific sources are referenced)
+}
+  ]
 }`;
 
-// --- DOM Elements ---
+const getTrendingNewsPrompt = (aiLanguageName, topic) => `You are 'TruthLens AI', an intelligent news curator for India.
+Your task is to find the top 3 to 6 latest, trending, and factual news articles strictly related to India on the topic of: ${topic} in India (e.g., Indian politics, Indian stock market/finance, Indian geography/environment, Indian technology, Indian business).
+You MUST use Google Search grounding to find real, up-to-date, genuine news from reputable Indian and global news sources reporting on India.
+
+CRITICAL REQUIREMENT:
+You MUST respond entirely in ${aiLanguageName}.
+All JSON keys must remain exactly in English, but values (titles, summaries) must be translated into ${aiLanguageName}.
+
+Output MUST be purely in JSON format:
+{
+  "news": [
+    {
+      "title": "Title of the verified news article",
+      "summary": "2-3 sentences summarizing the key facts.",
+      "sourceUrl": "https://source.url",
+      "credibilityScore": number (0-100)
+    }
+  ]
+}`;// --- DOM Elements ---
 const langToggle = document.getElementById('lang-toggle');
 const settingsBtn = document.getElementById('settings-btn');
 const settingsModal = document.getElementById('settings-modal');
@@ -43,6 +63,17 @@ const inputSection = document.querySelector('.input-section');
 const loadingSection = document.getElementById('loading-section');
 const resultsSection = document.getElementById('results-section');
 const resetBtn = document.getElementById('reset-btn');
+
+const tabAnalyze = document.getElementById('tab-analyze');
+const tabTrending = document.getElementById('tab-trending');
+const factCheckView = document.getElementById('fact-check-view');
+const trendingSection = document.getElementById('trending-section');
+
+const topicPills = document.querySelectorAll('.topic-pill');
+const fetchNewsBtn = document.getElementById('fetch-news-btn');
+const trendingLoading = document.getElementById('trending-loading');
+const newsGrid = document.getElementById('news-grid');
+let selectedTopic = 'Politics';
 
 const verdictTitle = document.getElementById('verdict-title');
 const verdictIcon = document.getElementById('verdict-icon');
@@ -80,7 +111,19 @@ const i18n = {
     sourcesTitle: "Agent Sources Checked",
     resetBtn: "Check Another Claim",
     footerText: "TruthLens AI operates using large language models. Always independently verify critical information.",
-    aiLanguageName: "English"
+    aiLanguageName: "English",
+    tabAnalyze: "Fact Check",
+    tabTrending: "India News",
+    trendingTitle: "India News",
+    trendingDesc: "Discover the latest verified news across India including geography, politics, stock market, and more, curated by TruthLens AI.",
+    topicPolitics: "Politics",
+    topicStock: "Stock Market",
+    topicGeography: "Geography",
+    topicTech: "Technology",
+    topicBusiness: "Business",
+    discoverNewsBtn: "Discover India News",
+    trendingLoadingText: "Curating India News...",
+    trendingLoadingSubtext: "AI is searching and cross-verifying the latest Indian stories from credible sources."
   },
   hi: {
     appTitle: "TruthLens <span>AI</span>",
@@ -104,7 +147,19 @@ const i18n = {
     sourcesTitle: "जाँचे गए स्रोत",
     resetBtn: "कोई अन्य दावा जाँचें",
     footerText: "TruthLens AI बड़े भाषा मॉडल का उपयोग करता है। हमेशा महत्वपूर्ण जानकारी को स्वतंत्र रूप से सत्यापित करें।",
-    aiLanguageName: "Hindi"
+    aiLanguageName: "Hindi",
+    tabAnalyze: "तथ्य जाँच",
+    tabTrending: "भारत समाचार",
+    trendingTitle: "भारत समाचार",
+    trendingDesc: "TruthLens AI द्वारा संकलित राजनीति, शेयर बाज़ार, भूगोल आदि पर भारत के नवीनतम सत्यापित समाचार खोजें।",
+    topicPolitics: "राजनीति",
+    topicStock: "शेयर बाज़ार",
+    topicGeography: "भूगोल एवं पर्यावरण",
+    topicTech: "प्रौद्योगिकी",
+    topicBusiness: "व्यापार एवं अर्थव्यवस्था",
+    discoverNewsBtn: "भारत के समाचार खोजें",
+    trendingLoadingText: "भारत समाचार संकलित किए जा रहे हैं...",
+    trendingLoadingSubtext: "AI विश्वसनीय भारतीय स्रोतों से नवीनतम कहानियों की खोज और सत्यापन कर रहा है।"
   }
 };
 
@@ -198,6 +253,32 @@ resetBtn.addEventListener('click', () => {
 });
 
 analyzeBtn.addEventListener('click', performAnalysis);
+
+// Tab Switching
+tabAnalyze.addEventListener('click', () => {
+  tabAnalyze.classList.add('active');
+  tabTrending.classList.remove('active');
+  factCheckView.classList.remove('hidden');
+  trendingSection.classList.add('hidden');
+});
+
+tabTrending.addEventListener('click', () => {
+  tabTrending.classList.add('active');
+  tabAnalyze.classList.remove('active');
+  factCheckView.classList.add('hidden');
+  trendingSection.classList.remove('hidden');
+});
+
+// Topic Selection
+topicPills.forEach(pill => {
+  pill.addEventListener('click', (e) => {
+    topicPills.forEach(p => p.classList.remove('active'));
+    e.target.classList.add('active');
+    selectedTopic = e.target.getAttribute('data-topic');
+  });
+});
+
+fetchNewsBtn.addEventListener('click', fetchTrendingNews);
 
 function clearImage() {
   currentImageBase64 = null;
@@ -357,6 +438,79 @@ function displayResults(data) {
   } else {
     sourceBox.style.display = 'none';
   }
+}
+
+async function fetchTrendingNews() {
+  const apiKey = localStorage.getItem(API_KEY_STORAGE);
+  if (!apiKey) {
+    alert("Please enter your Google Gemini API Key in the settings first.");
+    openSettings();
+    return;
+  }
+
+  fetchNewsBtn.style.display = 'none';
+  newsGrid.classList.add('hidden');
+  trendingLoading.classList.remove('hidden');
+
+  try {
+    const ai = new GoogleGenAI({ apiKey: apiKey });
+    const aiLanguageName = (i18n[currentLanguage] || i18n.en).aiLanguageName;
+    const dynamicPrompt = getTrendingNewsPrompt(aiLanguageName, selectedTopic);
+    
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: `Find the latest news in India for: ${selectedTopic}`,
+      config: {
+        systemInstruction: dynamicPrompt,
+        tools: [{ googleSearch: {} }],
+        temperature: 0.2
+      }
+    });
+
+    let responseData = response.text;
+    console.log("Trending News Raw:", responseData);
+    responseData = responseData.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/i, '').trim();
+
+    const parsedData = JSON.parse(responseData);
+    displayNewsCards(parsedData.news);
+
+  } catch (error) {
+    console.error("Trending News Error:", error);
+    alert("Failed to fetch trending news: " + error.message);
+  } finally {
+    trendingLoading.classList.add('hidden');
+    fetchNewsBtn.style.display = 'inline-flex';
+  }
+}
+
+function displayNewsCards(newsArray) {
+  newsGrid.innerHTML = '';
+  if (!newsArray || newsArray.length === 0) {
+    newsGrid.innerHTML = '<p style="color: var(--text-secondary); grid-column: 1/-1; text-align:center;">No verified news found for this topic at the moment.</p>';
+  } else {
+    newsArray.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'news-card';
+      
+      let badgeHtml = `<div class="credibility-badge"><i class="ph-fill ph-check-circle"></i> ${item.credibilityScore}% Verified</div>`;
+      if(item.credibilityScore < 70) {
+         badgeHtml = `<div class="credibility-badge" style="background:var(--status-unverified-glow); color:var(--status-unverified)"><i class="ph-fill ph-warning-circle"></i> ${item.credibilityScore}% Caution</div>`;
+      }
+
+      card.innerHTML = `
+        <div class="card-header">
+          <h3 class="card-title">${item.title}</h3>
+          ${badgeHtml}
+        </div>
+        <p class="card-summary">${item.summary}</p>
+        <a href="${item.sourceUrl}" target="_blank" rel="noopener noreferrer" class="card-source">
+          <i class="ph ph-arrow-up-right"></i> Read Full Source
+        </a>
+      `;
+      newsGrid.appendChild(card);
+    });
+  }
+  newsGrid.classList.remove('hidden');
 }
 
 // Initialize on start
